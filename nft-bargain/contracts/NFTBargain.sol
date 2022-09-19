@@ -3,6 +3,7 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 interface IActivity {
     event ActivityStatusChange(address indexed owner, bytes message);
@@ -37,6 +38,9 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
 
     bool isActivityStart;
     bool isActivityEnd;
+
+    using Counters for Counters.Counter;
+    Counters.Counter private tokenId;
 
     constructor(uint _bargainNum) ERC721("NFTBargain", "NBAG") {
         minBargainNum = _bargainNum;
@@ -107,8 +111,9 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
         return bargainNum[msg.sender];
     }
 
-    function mint(uint tokenId) public activityShouldValid bargainConditionShouldMatched {
+    function mint() public activityShouldValid bargainConditionShouldMatched {
         bargainNum[msg.sender] = 0;
-        _safeMint(msg.sender, tokenId);
+        _safeMint(msg.sender, tokenId.current());
+        tokenId.increment();
     }
 }
