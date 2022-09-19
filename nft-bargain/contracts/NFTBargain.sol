@@ -7,7 +7,9 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 
 interface IActivity {
     event ActivityStatusChange(address indexed owner, bytes message);
+
     function startActivity() external;
+
     function endActivity() external;
 
     // activity should start and not end
@@ -16,6 +18,7 @@ interface IActivity {
 
 interface IBargain {
     event BargainForUser(address indexed from, address indexed to);
+
     // msg.sender start to bargin for target user
     function bargainFor(address target) external returns (bool);
 
@@ -42,25 +45,38 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     bool _isActivityValid;
 
-    struct TokenProperty {
-        uint256 bargainNum;
-    }
+    string private _baseTokenURI;
 
-    struct TokenURI {
-        bytes32 imageUrl;
-        TokenProperty properties;
-    }
+    // struct TokenProperty {
+    //     uint256 bargainNum;
+    // }
 
-    mapping(uint256 => TokenURI) tokenUris;
+    // struct TokenURI {
+    //     bytes32 imageUrl;
+    //     TokenProperty properties;
+    // }
+
+    // mapping(uint256 => TokenURI) tokenUris;
 
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
 
-    constructor(uint256 minBargainNum, uint256 maxSupply, uint256 maxMintNumPerAddress) ERC721("NFTBargain", "NBAG") {
+    constructor(
+        uint256 minBargainNum,
+        uint256 maxSupply,
+        uint256 maxMintNumPerAddress,
+        string memory baseTokenURI
+    ) ERC721("NFTBargain", "NBAG") {
         _minBargainNum = minBargainNum;
         _maxSupplyNum = maxSupply;
         _maxMintNumPerAddress = maxMintNumPerAddress;
+        _baseTokenURI = baseTokenURI;
         _isActivityValid = false;
+    }
+
+    // override get base uri func
+    function _baseURI() internal view override returns (string memory) {
+        return _baseTokenURI;
     }
 
     // bargain check, should not bargained, and can not bargain for self
@@ -100,7 +116,12 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         return _minBargainNum;
     }
 
-    function bargainFor(address target) public canBargain(target) activityShouldValid returns (bool) {
+    function bargainFor(address target)
+        public
+        canBargain(target)
+        activityShouldValid
+        returns (bool)
+    {
         bargainPool[msg.sender][target] = true;
         uint256 targetBargainNum = bargainNums[target];
         bargainNums[target] = targetBargainNum + 1;
@@ -130,8 +151,14 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     }
 
     function mint() public activityShouldValid bargainConditionShouldMatched {
-        require(_maxSupplyNum > _currentSuppliedNum, 'reached max supply limit');
-        require(balanceOf(msg.sender) < _maxMintNumPerAddress, 'reached max mint limit');
+        require(
+            _maxSupplyNum > _currentSuppliedNum,
+            "reached max supply limit"
+        );
+        require(
+            balanceOf(msg.sender) < _maxMintNumPerAddress,
+            "reached max mint limit"
+        );
         bargainNums[msg.sender] = 0;
         _currentSuppliedNum += 1;
         _safeMint(msg.sender, tokenId.current());
