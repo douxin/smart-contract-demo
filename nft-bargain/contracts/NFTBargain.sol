@@ -19,7 +19,7 @@ interface IBargain {
     function bargainFor(address target) external returns (bool);
 
     // check if msg.sender has bargined for target user or not
-    function isBarginedFor(address target) external view returns (bool);
+    function isBargainedFor(address target) external view returns (bool);
 
     // check if my bargain condition has been matched
     function isMyBargainConditionMatched() external view returns (bool);
@@ -47,7 +47,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     // bargain check, should not bargained, and can not bargain for self
     modifier canBargain(address target) {
         require(msg.sender != target, "cannot bargain for self");
-        require(!isBarginedFor(target), "you have bargained");
+        require(!isBargainedFor(target), "you have bargained");
         _;
     }
 
@@ -90,7 +90,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
         return true;
     }
 
-    function isBarginedFor(address target) public view returns (bool) {
+    function isBargainedFor(address target) public view returns (bool) {
         require(msg.sender != target, "cannot bargain for self");
         if (bargainPool[msg.sender][target]) {
             return bargainPool[msg.sender][target];
