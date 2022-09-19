@@ -36,16 +36,14 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     // storage the bargain records
     mapping(address => mapping(address => bool)) bargainPool;
 
-    bool isActivityStart;
-    bool isActivityEnd;
+    bool _isActivityValid;
 
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
 
     constructor(uint _bargainNum) ERC721("NFTBargain", "NBAG") {
         minBargainNum = _bargainNum;
-        isActivityStart = false;
-        isActivityEnd = false;
+        _isActivityValid = false;
     }
 
     // bargain check, should not bargained, and can not bargain for self
@@ -63,23 +61,22 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
 
     // actitity should start and not end
     modifier activityShouldValid() {
-        require(isActivityStart, "activity not start");
-        require(!isActivityEnd, "activity has been ended");
+        require(isActivityValid(), "activity is invalid");
         _;
     }
 
     function startActivity() public onlyOwner {
-        isActivityStart = true;
+        _isActivityValid = true;
         emit ActivityStatusChange(msg.sender, bytes("start activity"));
     }
 
     function endActivity() public onlyOwner {
-        isActivityEnd = true;
+        _isActivityValid = false;
         emit ActivityStatusChange(msg.sender, bytes("end activity"));
     }
 
     function isActivityValid() public view returns (bool) {
-        return isActivityStart && !isActivityEnd;
+        return _isActivityValid;
     }
 
     function getSetedMinBargainNum() public view returns (uint256) {
