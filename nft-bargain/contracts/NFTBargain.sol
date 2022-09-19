@@ -93,11 +93,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
 
     function isBargainedFor(address target) public view returns (bool) {
         require(msg.sender != target, "cannot bargain for self");
-        if (bargainPool[msg.sender][target]) {
-            return bargainPool[msg.sender][target];
-        } else {
-            return false;
-        }
+        return bargainPool[msg.sender][target];
     }
 
     function isMyBargainConditionMatched() public view returns (bool) {
