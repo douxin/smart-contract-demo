@@ -3,8 +3,9 @@ import "@nomicfoundation/hardhat-toolbox";
 
 const config: HardhatUserConfig = {
     solidity: "0.8.9",
-    defaultNetwork: 'ganacha',
+    defaultNetwork: 'hardhat',
     networks: {
+        hardhat: {},
         ganacha: {
             url: 'http://127.0.0.1:7545',
             accounts: [

@@ -82,7 +82,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
         return minBargainNum;
     }
 
-    function bargainFor(address target) public canBargain(target) returns (bool) {
+    function bargainFor(address target) public canBargain(target) activityShouldValid returns (bool) {
         bargainPool[msg.sender][target] = true;
         uint256 targetBargainNum = bargainNum[target];
         bargainNum[target] = targetBargainNum + 1;
