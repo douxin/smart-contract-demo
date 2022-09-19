@@ -1,13 +1,4 @@
-# Sample Hardhat Project
+# NFT Bargain
+NFT 砍一刀项目，类似于拼夕夕的砍一刀功能。目前大部分的 NFT 采用的白名单机制来增强社区的活跃度，鼓励大家拉新。砍一刀也是类似的目的，邀请好友打开活动主页也是拉新。
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
-
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
-```
+在部署合约的时候，可以设定成团的人数，当用户邀请好友的人数达到要求时，该用户才具备 mint 的能力。
