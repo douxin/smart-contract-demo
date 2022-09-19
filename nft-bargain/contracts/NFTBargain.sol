@@ -26,32 +26,41 @@ interface IBargain {
     function isMyBargainConditionMatched() external view returns (bool);
 }
 
-contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
+contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     // min bargain num, set in constractor, user can mint if this condition matched
     uint256 private _minBargainNum;
 
     uint256 private _maxSupplyNum;
     uint256 private _currentSuppliedNum;
+    uint256 private _maxMintNumPerAddress;
 
     // storage the bagain number of user
-    mapping(address => uint256) bargainNum;
+    mapping(address => uint256) bargainNums;
 
     // storage the bargain records
     mapping(address => mapping(address => bool)) bargainPool;
 
     bool _isActivityValid;
 
+    struct TokenProperty {
+        uint256 bargainNum;
+    }
+
+    struct TokenURI {
+        bytes32 imageUrl;
+        TokenProperty properties;
+    }
+
+    mapping(uint256 => TokenURI) tokenUris;
+
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
 
-    constructor(uint256 minBargainNum, uint256 maxSupply) ERC721("NFTBargain", "NBAG") {
+    constructor(uint256 minBargainNum, uint256 maxSupply, uint256 maxMintNumPerAddress) ERC721("NFTBargain", "NBAG") {
         _minBargainNum = minBargainNum;
         _maxSupplyNum = maxSupply;
+        _maxMintNumPerAddress = maxMintNumPerAddress;
         _isActivityValid = false;
-    }
-
-    function totalSupply() public view returns (uint256) {
-        return _maxSupplyNum;
     }
 
     // bargain check, should not bargained, and can not bargain for self
@@ -93,8 +102,8 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
 
     function bargainFor(address target) public canBargain(target) activityShouldValid returns (bool) {
         bargainPool[msg.sender][target] = true;
-        uint256 targetBargainNum = bargainNum[target];
-        bargainNum[target] = targetBargainNum + 1;
+        uint256 targetBargainNum = bargainNums[target];
+        bargainNums[target] = targetBargainNum + 1;
         emit BargainForUser(msg.sender, target);
         return true;
     }
@@ -109,7 +118,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     }
 
     function getMyBargainNum() public view returns (uint256) {
-        return bargainNum[msg.sender];
+        return bargainNums[msg.sender];
     }
 
     function getCurrentSuppliedNum() public view returns (uint256) {
@@ -122,8 +131,9 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
 
     function mint() public activityShouldValid bargainConditionShouldMatched {
         require(_maxSupplyNum > _currentSuppliedNum, 'reached max supply limit');
-        bargainNum[msg.sender] = 0;
-        _currentSuppliedNum++;
+        require(balanceOf(msg.sender) < _maxMintNumPerAddress, 'reached max mint limit');
+        bargainNums[msg.sender] = 0;
+        _currentSuppliedNum += 1;
         _safeMint(msg.sender, tokenId.current());
         tokenId.increment();
     }
