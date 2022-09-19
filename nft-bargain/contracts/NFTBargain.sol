@@ -4,6 +4,7 @@ pragma solidity ^0.8.9;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
 interface IActivity {
     event ActivityStatusChange(address indexed owner, bytes message);
@@ -47,19 +48,10 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     string private _baseTokenURI;
 
-    // struct TokenProperty {
-    //     uint256 bargainNum;
-    // }
-
-    // struct TokenURI {
-    //     bytes32 imageUrl;
-    //     TokenProperty properties;
-    // }
-
-    // mapping(uint256 => TokenURI) tokenUris;
-
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
+
+    using Strings for uint256;
 
     constructor(
         uint256 minBargainNum,
@@ -77,6 +69,14 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     // override get base uri func
     function _baseURI() internal view override returns (string memory) {
         return _baseTokenURI;
+    }
+
+    // override tokenURI
+    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+        _requireMinted(_tokenId);
+
+        string memory baseURI = _baseURI();
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, "?filename=", _tokenId.toString())) : "";
     }
 
     // bargain check, should not bargained, and can not bargain for self
@@ -150,7 +150,8 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         return _maxSupplyNum;
     }
 
-    function mint() public activityShouldValid bargainConditionShouldMatched {
+    // return the minted tokenId, latest bargained number which can be added to token metadata
+    function mint() public activityShouldValid bargainConditionShouldMatched returns (uint256, uint256) {
         require(
             _maxSupplyNum > _currentSuppliedNum,
             "reached max supply limit"
@@ -159,9 +160,16 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
             balanceOf(msg.sender) < _maxMintNumPerAddress,
             "reached max mint limit"
         );
+
+        uint256 latestBargainedNum = bargainNums[msg.sender];
         bargainNums[msg.sender] = 0;
+
         _currentSuppliedNum += 1;
-        _safeMint(msg.sender, tokenId.current());
+
+        uint256 currentTokenId = tokenId.current();
+        _safeMint(msg.sender, currentTokenId);
         tokenId.increment();
+
+        return (currentTokenId, latestBargainedNum);
     }
 }

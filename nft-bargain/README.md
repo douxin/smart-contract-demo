@@ -26,3 +26,27 @@ NFT 砍一刀项目，类似于拼夕夕的砍一刀功能。目前大部分的 
 当满足以上所有条件后，可以通过 `bargainFor` 来助力。
 
 当上述条件均满足后，可以通过 `mint` 方法完成 NFT mint。当成功 mint 后，用户的已助力次数会清零。
+
+## 如何设置 tokenURI
+`tokenURI` 是一个 json 文件，其中包含该 token 的 metadata。此文件可以存放在去中心化的存储上，如 `IPFS`。`tokenURI` 地址格式如 `https://ipfs.io/ipfs/QmQoJjiFkEaQ1oaetbDFEXKqwjwWCCvMSBiDU1x196JjYP?filename=0`，最后的 `0` 是 `tokenId`，前面是 `baseTokenURI`，在部署合约的时候设定。
+
+可以将助力的次数添加到 token metadata 中，调用 `mint` 方法可以返回此次 `tokenId`、`latestBargainedNum`(此次 mint 周期的助力次数)，在 json 文件中增加：
+
+```json
+{
+    "image": "ipfs://IMAGE_CID",
+    "name": "token name",
+    "description": "token desc",
+    "attributes": [
+        {
+            "trait_type": "Bargain Number",
+            "display_type": "number",
+            "value": "${latestBargainedNum}"
+        }
+    ]
+}
+```
+
+此 json 文件中的各项属性含义见 👉 [OpenSea Metadata Standards](https://docs.opensea.io/docs/metadata-standards)
+
+使用 `tokenId` 命名此文件，并通过脚本将此文件上传到 IPFS 内。
