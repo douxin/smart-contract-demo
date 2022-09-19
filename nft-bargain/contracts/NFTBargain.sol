@@ -28,10 +28,13 @@ interface IBargain {
 
 contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     // min bargain num, set in constractor, user can mint if this condition matched
-    uint private minBargainNum;
+    uint256 private _minBargainNum;
+
+    uint256 private _maxSupplyNum;
+    uint256 private _currentSuppliedNum;
 
     // storage the bagain number of user
-    mapping(address => uint) bargainNum;
+    mapping(address => uint256) bargainNum;
 
     // storage the bargain records
     mapping(address => mapping(address => bool)) bargainPool;
@@ -41,9 +44,14 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
 
-    constructor(uint _bargainNum) ERC721("NFTBargain", "NBAG") {
-        minBargainNum = _bargainNum;
+    constructor(uint256 minBargainNum, uint256 maxSupply) ERC721("NFTBargain", "NBAG") {
+        _minBargainNum = minBargainNum;
+        _maxSupplyNum = maxSupply;
         _isActivityValid = false;
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _maxSupplyNum;
     }
 
     // bargain check, should not bargained, and can not bargain for self
@@ -80,7 +88,7 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     }
 
     function getSetedMinBargainNum() public view returns (uint256) {
-        return minBargainNum;
+        return _minBargainNum;
     }
 
     function bargainFor(address target) public canBargain(target) activityShouldValid returns (bool) {
@@ -97,15 +105,25 @@ contract NFTBargain is ERC721,  Ownable, IActivity, IBargain {
     }
 
     function isMyBargainConditionMatched() public view returns (bool) {
-        return getMyBargainNum() >= minBargainNum;
+        return getMyBargainNum() >= _minBargainNum;
     }
 
     function getMyBargainNum() public view returns (uint256) {
         return bargainNum[msg.sender];
     }
 
+    function getCurrentSuppliedNum() public view returns (uint256) {
+        return _currentSuppliedNum;
+    }
+
+    function getMaxSupplyNum() public view returns (uint256) {
+        return _maxSupplyNum;
+    }
+
     function mint() public activityShouldValid bargainConditionShouldMatched {
+        require(_maxSupplyNum > _currentSuppliedNum, 'reached max supply limit');
         bargainNum[msg.sender] = 0;
+        _currentSuppliedNum++;
         _safeMint(msg.sender, tokenId.current());
         tokenId.increment();
     }
