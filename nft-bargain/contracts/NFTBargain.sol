@@ -31,19 +31,31 @@ interface IBargain {
 }
 
 contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
-    // min bargain num, set in constractor, user can mint if this condition matched
+    // 最低助力次数，在一个周期内，必须达到这个次数，才能 mint
     uint256 private _minBargainNum;
 
+    // nft 最大供应数量
     uint256 private _maxSupplyNum;
+
+    // 当前已 mint 出的数量
     uint256 private _currentSuppliedNum;
+
+    // 每个用户最大 mint 数量
     uint256 private _maxMintNumPerAddress;
 
-    // storage the bagain number of user
+    // 每个用户最多能给几个人助力
+    uint256 private _maxBargainForCount;
+
+    // 记录推广人已被助力的次数，在 mint 之后，此数字会被清零
     mapping(address => uint256) bargainNums;
 
-    // storage the bargain records
+    // 记录助力人的助力记录
     mapping(address => mapping(address => bool)) bargainPool;
 
+    // 记录助力人已助力的次数
+    mapping (address => uint256) bargainForCounts;
+
+    // 控制活动是否可用
     bool _isActivityValid;
 
     string private _baseTokenURI;
@@ -55,11 +67,13 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     constructor(
         uint256 minBargainNum,
+        uint256 maxBargainForCount,
         uint256 maxSupply,
         uint256 maxMintNumPerAddress,
         string memory baseTokenURI
     ) ERC721("NFTBargain", "NBAG") {
         _minBargainNum = minBargainNum;
+        _maxBargainForCount = maxBargainForCount;
         _maxSupplyNum = maxSupply;
         _maxMintNumPerAddress = maxMintNumPerAddress;
         _baseTokenURI = baseTokenURI;
@@ -79,10 +93,16 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, "?filename=", _tokenId.toString())) : "";
     }
 
-    // bargain check, should not bargained, and can not bargain for self
+    /**
+     * bargain rules
+     * - should not bargained for the same target user
+     * - and can not bargain for self
+     * - and count of bargain should less or equal than _maxBargainForCount
+     */
     modifier canBargain(address target) {
         require(msg.sender != target, "cannot bargain for self");
         require(!isBargainedFor(target), "you have bargained");
+        require(bargainForCounts[msg.sender] <= _maxBargainForCount, "reach the max bargain count");
         _;
     }
 
@@ -122,9 +142,15 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         activityShouldValid
         returns (bool)
     {
+        // 增加砍一刀记录
         bargainPool[msg.sender][target] = true;
-        uint256 targetBargainNum = bargainNums[target];
-        bargainNums[target] = targetBargainNum + 1;
+
+        // 更新砍一刀次数
+        bargainForCounts[msg.sender] += 1;
+
+        // 更新推广人助力次数
+        bargainNums[target] += 1;
+
         emit BargainForUser(msg.sender, target);
         return true;
     }
@@ -140,6 +166,10 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     function getMyBargainNum() public view returns (uint256) {
         return bargainNums[msg.sender];
+    }
+
+    function getMyBargainedForCount() public view returns (uint256) {
+        return bargainForCounts[msg.sender];
     }
 
     function getCurrentSuppliedNum() public view returns (uint256) {
