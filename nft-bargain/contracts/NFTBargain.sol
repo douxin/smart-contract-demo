@@ -32,19 +32,21 @@ interface IBargain {
 
 contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     // 最低助力次数，在一个周期内，必须达到这个次数，才能 mint
-    uint256 private _minBargainNum;
+    uint256 public constant MIN_BARGAIN_NUM_TO_MINT = 2;
 
     // nft 最大供应数量
-    uint256 private _maxSupplyNum;
+    uint256 public constant MAX_SUPPLY_NUM = 1000;
 
     // 当前已 mint 出的数量
     uint256 private _currentSuppliedNum;
 
     // 每个用户最大 mint 数量
-    uint256 private _maxMintNumPerAddress;
+    uint256 public constant MAX_MINT_NUM_PER_ADDRESS = 5;
 
     // 每个用户最多能给几个人助力
-    uint256 private _maxBargainForCount;
+    uint256 public constant MAX_BARGAIN_FOR_COUNT = 5;
+
+    uint256 public constant TOKEN_PRICE = 0.01 ether;
 
     // 记录推广人已被助力的次数，在 mint 之后，此数字会被清零
     mapping(address => uint256) bargainNums;
@@ -53,7 +55,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     mapping(address => mapping(address => bool)) bargainPool;
 
     // 记录助力人已助力的次数
-    mapping (address => uint256) bargainForCounts;
+    mapping(address => uint256) bargainForCounts;
 
     // 控制活动是否可用
     bool _isActivityValid;
@@ -65,17 +67,10 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     using Strings for uint256;
 
-    constructor(
-        uint256 minBargainNum,
-        uint256 maxBargainForCount,
-        uint256 maxSupply,
-        uint256 maxMintNumPerAddress,
-        string memory baseTokenURI
-    ) ERC721("NFTBargain", "NBAG") {
-        _minBargainNum = minBargainNum;
-        _maxBargainForCount = maxBargainForCount;
-        _maxSupplyNum = maxSupply;
-        _maxMintNumPerAddress = maxMintNumPerAddress;
+    constructor(string memory baseTokenURI)
+        payable
+        ERC721("NFTBargain", "NBAG")
+    {
         _baseTokenURI = baseTokenURI;
         _isActivityValid = false;
     }
@@ -86,11 +81,21 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     }
 
     // override tokenURI
-    function tokenURI(uint256 _tokenId) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
         _requireMinted(_tokenId);
 
         string memory baseURI = _baseURI();
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, "?filename=", _tokenId.toString())) : "";
+        return
+            bytes(baseURI).length > 0
+                ? string(
+                    abi.encodePacked(baseURI, "?filename=", _tokenId.toString())
+                )
+                : "";
     }
 
     /**
@@ -102,7 +107,10 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     modifier canBargain(address target) {
         require(msg.sender != target, "cannot bargain for self");
         require(!isBargainedFor(target), "you have bargained");
-        require(bargainForCounts[msg.sender] <= _maxBargainForCount, "reach the max bargain count");
+        require(
+            bargainForCounts[msg.sender] <= MAX_BARGAIN_FOR_COUNT,
+            "reach the max bargain count"
+        );
         _;
     }
 
@@ -132,10 +140,6 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         return _isActivityValid;
     }
 
-    function getSetedMinBargainNum() public view returns (uint256) {
-        return _minBargainNum;
-    }
-
     function bargainFor(address target)
         public
         canBargain(target)
@@ -161,7 +165,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     }
 
     function isMyBargainConditionMatched() public view returns (bool) {
-        return getMyBargainNum() >= _minBargainNum;
+        return getMyBargainNum() >= MIN_BARGAIN_NUM_TO_MINT;
     }
 
     function getMyBargainNum() public view returns (uint256) {
@@ -176,18 +180,21 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         return _currentSuppliedNum;
     }
 
-    function getMaxSupplyNum() public view returns (uint256) {
-        return _maxSupplyNum;
-    }
-
     // return the minted tokenId, latest bargained number which can be added to token metadata
-    function mint() public activityShouldValid bargainConditionShouldMatched returns (uint256, uint256) {
+    function mint()
+        public
+        payable
+        activityShouldValid
+        bargainConditionShouldMatched
+        returns (uint256, uint256)
+    {
+        require(msg.value >= TOKEN_PRICE, "pay fee is less than token price");
         require(
-            _maxSupplyNum > _currentSuppliedNum,
+            MAX_SUPPLY_NUM > _currentSuppliedNum,
             "reached max supply limit"
         );
         require(
-            balanceOf(msg.sender) < _maxMintNumPerAddress,
+            balanceOf(msg.sender) < MAX_MINT_NUM_PER_ADDRESS,
             "reached max mint limit"
         );
 
@@ -201,5 +208,15 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         tokenId.increment();
 
         return (currentTokenId, latestBargainedNum);
+    }
+
+    event ETHReceive(address, uint256);
+
+    receive() external payable {
+        emit ETHReceive(msg.sender, msg.value);
+    }
+
+    function balanceOfRewards() public view returns (uint256) {
+        return address(this).balance;
     }
 }
