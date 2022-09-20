@@ -5,6 +5,9 @@
 - [x] NFT mint 助力，类似于拼多多的砍一刀功能
 - [ ] mall point，商场积分项目，消费赚积分，积分可以抵扣、可以停车
 
+## Utils
+- [x] 动态生成图片，👉 `common-utils/generate_image.ts`
+
 ## Contact me
 如果你有智能合约开发的需求，欢迎通过以下方式联系我。
 Contact me if you have any **smart contract dev** requirements through the following way.
