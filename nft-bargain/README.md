@@ -49,7 +49,7 @@ NFT 砍一刀项目，类似于拼夕夕的砍一刀功能。目前大部分的 
 
 此 json 文件中的各项属性含义见 👉 [OpenSea Metadata Standards](https://docs.opensea.io/docs/metadata-standards)
 
-使用 `tokenId` 命名此文件，并通过脚本将此文件上传到 IPFS 内。
-
 ## 如何动态生成 NFT 图片
-在项目的 `common-utils` 中有动态生成图片的脚本。
+在项目的 `common-utils` 中有动态生成图片的脚本。在 `mint` 之后，会得到 `tokenId`、`助力人数` 等信息，可以将这些信息通过脚本自动生成图片，并上传至 `ipfs` 得到图片 `CID`。
+
+然后组合信息的到最终的 json 文件，并使用 `tokenId` 命名上传至 `ipfs` 即可。在上传时要确保文件的访问路径和对应的 `tokenURI` 是一致的。
