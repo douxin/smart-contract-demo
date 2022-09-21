@@ -130,8 +130,11 @@ contract Activity is IActivity, IBargain, Ownable {
      * - 当前周期内，满足助力要求
      */
     function canMintNFT(address target) external view returns (bool) {
-        require(_currentActivityStep == ActivitySteps.Active, "activity is not active");
-        return isBargainConditionMatched(target);
+        if (_currentActivityStep == ActivitySteps.Active) {
+            return isBargainConditionMatched(target);
+        } else {
+            return false;
+        }
     }
 
     /**
