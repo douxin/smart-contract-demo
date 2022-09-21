@@ -62,15 +62,11 @@ contract NFTBargain is ERC721, Ownable {
                 : "";
     }
 
-    function getMintedNumer() external view returns (uint256) {
+    function getMintedNumer() public view returns (uint256) {
         return _currentMintedNum;
     }
 
-    function getOwnerOf(uint256 tokenId) external view returns (address) {
-        return ownerOf(tokenId);
-    }
-
-    function isMintFinished() external view returns (bool) {
+    function isMintFinished() public view returns (bool) {
         return _isMintFinish;
     }
 

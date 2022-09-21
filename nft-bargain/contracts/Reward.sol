@@ -51,7 +51,7 @@ contract Reward is Ownable, IReward, PullPayment {
     }
 
     function _ownerOfToken(uint256 tokenId) internal view returns (address) {
-        return NFTBargain(payable(NFT_BARGAIN_ADDRESS)).getOwnerOf(tokenId);
+        return NFTBargain(payable(NFT_BARGAIN_ADDRESS)).ownerOf(tokenId);
     }
 
     function _isMintFinished() internal view returns (bool) {
