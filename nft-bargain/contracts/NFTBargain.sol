@@ -252,24 +252,6 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivityWithReward, IBarga
         return rewards.div(_currentMintedNum);
     }
 
-    // /**
-    //  * 获取用户 mint 数量
-    //  */
-    // function _getMintedNum(address owner) internal view allocateRewardShouldStart returns (uint256) {
-    //     return balanceOf(owner);
-    // }
-
-    // /**
-    //  * 获取用户的奖金总额
-    //  * totalAmount = 平均金额 * 用户 mint 数量
-    //  */
-    // function _getRewardAmountOf(address owner) internal view allocateRewardShouldStart returns (uint256) {
-    //     uint256 avgAmount = _getAverageRewardAmount();
-    //     uint256 myMintedNum = _getMintedNum(owner);
-    //     require(myMintedNum > 0, "user should minted");
-    //     return avgAmount.mul(myMintedNum);
-    // }
-
     /**
      * 管理员调用，给用户分配奖金
      */
