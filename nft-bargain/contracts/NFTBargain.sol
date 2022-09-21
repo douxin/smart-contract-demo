@@ -9,15 +9,24 @@ import "@openzeppelin/contracts/security/PullPayment.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface IActivity {
+    enum ActivitySteps {
+        NotStart, // 活动未开始
+        Active, // 活动进行中
+        ActivityFinished, // 活动已结束，等待管理员分配奖池
+        AllocateRewardFinished // 奖金分配结束，用户可以提现
+    }
+
     event ActivityStatusChange(address indexed owner, bytes message);
 
     function startActivity() external;
-
     function endActivity() external;
-
-    // activity should start and not end
-    function isActivityValid() external view returns (bool);
 }
+
+interface IReward {
+    function allocateReward() external;
+}
+
+interface IActivityWithReward is IActivity, IReward {}
 
 interface IBargain {
     event BargainForUser(address indexed from, address indexed to);
@@ -32,9 +41,9 @@ interface IBargain {
     function isMyBargainConditionMatched() external view returns (bool);
 }
 
-contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
+contract NFTBargain is ERC721, Ownable, PullPayment, IActivityWithReward, IBargain {
     // 最低助力次数，在一个周期内，必须达到这个次数，才能 mint
-    uint256 public constant MIN_BARGAIN_NUM_TO_MINT = 2;
+    uint256 public constant MIN_BARGAIN_NUM_TO_MINT = 1;
 
     // nft 最大供应数量
     uint256 public constant MAX_SUPPLY_NUM = 1000;
@@ -59,11 +68,7 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
     // 记录助力人已助力的次数
     mapping(address => uint256) bargainForCounts;
 
-    // 控制活动是否可用
-    bool _isActivityValid;
-
-    // 活动是否结束，结束后，奖池开启
-    bool _isActivityFinished;
+    ActivitySteps _currentActivityStep;
 
     string private _baseTokenURI;
 
@@ -78,8 +83,7 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
         ERC721("NFTBargain", "NBAG")
     {
         _baseTokenURI = baseTokenURI;
-        _isActivityValid = false;
-        _isActivityFinished = false;
+        _currentActivityStep = ActivitySteps.NotStart;
     }
 
     // override get base uri func
@@ -127,30 +131,34 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
         _;
     }
 
-    // actitity should start and not end
+    // actitity should be Active
     modifier activityShouldValid() {
-        require(isActivityValid(), "activity is invalid");
+        require(_currentActivityStep == ActivitySteps.Active, "activity is invalid");
         _;
     }
 
-    modifier rewardShouldStart() {
-        require(_isActivityFinished, "activity not finished");
+    modifier allocateRewardShouldStart() {
+        require(_currentActivityStep == ActivitySteps.ActivityFinished, "allocate reward not start");
         _;
+    }
+
+    modifier withdrawRewardShouldStart() {
+        require(_currentActivityStep == ActivitySteps.AllocateRewardFinished, "withdraw reward not start");
+        _;
+    }
+
+    function _changeActivityStepTo(ActivitySteps step) internal onlyOwner {
+        _currentActivityStep = step;
     }
 
     function startActivity() public onlyOwner {
-        _isActivityValid = true;
+        _changeActivityStepTo(ActivitySteps.Active);
         emit ActivityStatusChange(msg.sender, bytes("start activity"));
     }
 
     function endActivity() public onlyOwner {
-        _isActivityValid = false;
-        _isActivityFinished = true;
+        _changeActivityStepTo(ActivitySteps.ActivityFinished);
         emit ActivityStatusChange(msg.sender, bytes("end activity"));
-    }
-
-    function isActivityValid() public view returns (bool) {
-        return _isActivityValid;
     }
 
     function bargainFor(address target)
@@ -237,34 +245,48 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
      * 获取平均金额
      * avgAmount = 奖池总金额 / NFT minted 数量
      */
-    function _getAverageRewardAmount() internal view rewardShouldStart returns (uint256) {
+    function _getAverageRewardAmount() internal view allocateRewardShouldStart returns (uint256) {
         require(_currentMintedNum > 0, "minted number should larger than 0");
         uint256 rewards = totalRewards();
         require(rewards > 0, "rewards should larger than 0");
         return rewards.div(_currentMintedNum);
     }
 
+    // /**
+    //  * 获取用户 mint 数量
+    //  */
+    // function _getMintedNum(address owner) internal view allocateRewardShouldStart returns (uint256) {
+    //     return balanceOf(owner);
+    // }
+
+    // /**
+    //  * 获取用户的奖金总额
+    //  * totalAmount = 平均金额 * 用户 mint 数量
+    //  */
+    // function _getRewardAmountOf(address owner) internal view allocateRewardShouldStart returns (uint256) {
+    //     uint256 avgAmount = _getAverageRewardAmount();
+    //     uint256 myMintedNum = _getMintedNum(owner);
+    //     require(myMintedNum > 0, "user should minted");
+    //     return avgAmount.mul(myMintedNum);
+    // }
+
     /**
-     * 获取用户 mint 数量
+     * 管理员调用，给用户分配奖金
      */
-    function _getMintedNum(address owner) internal view returns (uint256) {
-        return balanceOf(owner);
+    function allocateReward() public onlyOwner allocateRewardShouldStart {
+        uint256 rewardAmount = _getAverageRewardAmount();
+        for (uint256 i = 0; i < _currentMintedNum; i++) {
+            address user = ownerOf(i);
+            _asyncTransfer(user, rewardAmount);
+        }
+        _changeActivityStepTo(ActivitySteps.AllocateRewardFinished);
     }
 
     /**
-     * 获取当前用户的奖金总额
-     * totalAmount = 平均金额 * 用户 mint 数量
+     * 用户调用，取现奖金
      */
-    function getMyRewardAmount() public view rewardShouldStart returns (uint256) {
-        uint256 avgAmount = _getAverageRewardAmount();
-        uint256 myMintedNum = _getMintedNum(msg.sender);
-        require(myMintedNum > 0, "user should minted");
-        return avgAmount.mul(myMintedNum);
-    }
-
-    function withdrawReward() public rewardShouldStart {
-        uint256 amount = getMyRewardAmount();
-        require(amount > 0, "reward amount should larger than 0");
-        _asyncTransfer(msg.sender, amount);
+    function withdrawPayments(address payable payee) public withdrawRewardShouldStart override {
+        require(msg.sender == payee, "only withdraw for self");
+        super.withdrawPayments(payee);
     }
 }
