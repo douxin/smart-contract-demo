@@ -15,24 +15,13 @@ NFT 砍一刀项目，类似于拼夕夕的砍一刀功能。目前大部分的 
 ├── tsconfig.json
 ```
 
-## 活动阶段
-在 `IActivity` 中定义了活动的阶段，分别为：
+## 合约
+共 3 个合约，`Activity.sol` 是活动合约，`NFTBargain.sol` 是 NFT 合约，`Reward` 是奖池合约。
 
-```solidity
-enum ActivitySteps {
-    NotStart, // 活动未开始
-    Active, // 活动进行中
-    ActivityFinished, // 活动已结束，等待管理员分配奖池
-    AllocateRewardFinished // 奖金分配结束，用户可以提现
-}
-```
-
-合约初始化后，为 `NotStart`。管理员手动开启活动和关闭活动，即设置状态为 `Active` 和 `ActivityFinished`。在活动结束后，管理员进行奖金的分配。分配完成后，设置状态为 `AllocateRewardFinished`。之后，用户可以奖金取现。
+活动进行中，只要满足了助力条件，就可以 mint NFT。在活动结束后，所有 NFT 持有者可以平分奖池内的金额。在奖金兑换完成后，剩余未被领取的金额将被管理员取回。
 
 ## 助力要求
-合约主要是由 `IActivity`、`IBargain` 两个 `interface` 来实现的。前者控制活动的开始和结束，只有在活动开始且活动未结束的情况下，该活动才能使用，可以通过 `isActivityValid` 来获取结果。
-
-`IBargain` 这个接口里控制着“砍一刀”的具体实现，必须满足以下条件才能成功“砍一刀”：
+必须满足以下条件才能成功“砍一刀”：
 - 活动必须已开始且未结束
 - 不能给自己助力
 - 只能给目标用户助力一次，不可重复
@@ -74,4 +63,4 @@ enum ActivitySteps {
 然后组合信息的到最终的 json 文件，并使用 `tokenId` 命名上传至 `ipfs` 即可。在上传时要确保文件的访问路径和对应的 `tokenURI` 是一致的。
 
 ## 奖金池
-此合约增加了奖金池的功能，用户 `mint` 时需要支付 eth。在活动结束后，管理员手动调用 `allocateReward` 进行奖金的分配。分配完成后，用户调用 `withdrawPayments` 取现。
+`Reward` 里是奖金池功能。管理员通过 `finishXXX` 来控制进度。用户通过 `withdrawReward` 取现。在管理员关闭取现活动后，通过 `withdrawRest` 取回剩余奖金。
