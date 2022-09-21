@@ -9,7 +9,7 @@ import "./Activity.sol";
 
 contract NFTBargain is ERC721, Ownable {
     // 已部署的 Activity 合约地址
-    address constant ACTIVITY_ADDRESS = 0xd2FCFefFe8E79F6eFb74567403Ba45CC5eba8981;
+    address constant ACTIVITY_ADDRESS = 0xd9145CCE52D386f254917e481eB44e9943F39138;
 
     // nft 最大供应数量
     uint256 public constant MAX_SUPPLY_NUM = 1000;
@@ -76,6 +76,10 @@ contract NFTBargain is ERC721, Ownable {
 
     function _getBargainCountOf(address owner) internal view returns (uint256) {
         return Activity(ACTIVITY_ADDRESS).bargainCountOf(owner);
+    }
+
+    function finishMint() public onlyOwner {
+        _isMintFinish = true;
     }
 
     // return the minted tokenId, latest bargained number which can be added to token metadata
