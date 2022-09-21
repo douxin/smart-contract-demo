@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/PullPayment.sol";
+import "@openzeppelin/contracts/utils/escrow/Escrow.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "./NFTBargain.sol";
 
@@ -17,7 +17,7 @@ interface IReward {
     function allocateReward() external;
 }
 
-contract Reward is Ownable, IReward, PullPayment {
+contract Reward is Ownable, IReward, Escrow {
     // address of deployed NFT contract
     address constant NFT_BARGAIN_ADDRESS = 0xd2FCFefFe8E79F6eFb74567403Ba45CC5eba8981;
 
@@ -25,8 +25,11 @@ contract Reward is Ownable, IReward, PullPayment {
 
     using SafeMath for uint256;
 
+    Escrow private immutable _escrow;
+
     constructor() {
         _rewardState = RewardState.NotStart;
+        _escrow = new Escrow();
     }
 
     // 管理员开启奖池取现
@@ -84,16 +87,35 @@ contract Reward is Ownable, IReward, PullPayment {
         uint256 rewardAmount = _getAverageRewardAmount(curMintedNum);
         for (uint256 i = 0; i < curMintedNum; i++) {
             address user = _ownerOfToken(i);
-            _asyncTransfer(user, rewardAmount);
+            _escrow.deposit{value: rewardAmount}(user);
         }
+    }
+
+    /**
+     * 用户调研，查询可以取现的金额
+     */
+    function canWithdrawAmount() public view returns (uint256) {
+        return _escrow.depositsOf(msg.sender);
     }
 
     /**
      * 用户调用，取现奖金
      */
-    function withdrawPayments(address payable payee) public override {
+    function withdrawPayments(address payable payee) public {
         require(_rewardState == RewardState.WithdrawActive, "withdraw should active");
         require(msg.sender == payee, "only withdraw for self");
-        super.withdrawPayments(payee);
+        _escrow.withdraw(payee);
+    }
+
+    /**
+     * 活动结束，管理员取回剩余奖金
+     */
+    function ownerWithdraw() public payable onlyOwner {
+        require(_rewardState == RewardState.Finished, "reward not finish");
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    function balanceOfRewards() public view returns (uint256) {
+        return address(this).balance;
     }
 }
