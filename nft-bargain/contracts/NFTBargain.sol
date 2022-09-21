@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/security/PullPayment.sol";
+import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 interface IActivity {
     event ActivityStatusChange(address indexed owner, bytes message);
@@ -30,7 +32,7 @@ interface IBargain {
     function isMyBargainConditionMatched() external view returns (bool);
 }
 
-contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
+contract NFTBargain is ERC721, Ownable, PullPayment, IActivity, IBargain {
     // 最低助力次数，在一个周期内，必须达到这个次数，才能 mint
     uint256 public constant MIN_BARGAIN_NUM_TO_MINT = 2;
 
@@ -38,7 +40,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     uint256 public constant MAX_SUPPLY_NUM = 1000;
 
     // 当前已 mint 出的数量
-    uint256 private _currentSuppliedNum;
+    uint256 private _currentMintedNum;
 
     // 每个用户最大 mint 数量
     uint256 public constant MAX_MINT_NUM_PER_ADDRESS = 5;
@@ -60,12 +62,16 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     // 控制活动是否可用
     bool _isActivityValid;
 
+    // 活动是否结束，结束后，奖池开启
+    bool _isActivityFinished;
+
     string private _baseTokenURI;
 
     using Counters for Counters.Counter;
     Counters.Counter private tokenId;
 
     using Strings for uint256;
+    using SafeMath for uint256;
 
     constructor(string memory baseTokenURI)
         payable
@@ -73,6 +79,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     {
         _baseTokenURI = baseTokenURI;
         _isActivityValid = false;
+        _isActivityFinished = false;
     }
 
     // override get base uri func
@@ -126,6 +133,11 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         _;
     }
 
+    modifier rewardShouldStart() {
+        require(_isActivityFinished, "activity not finished");
+        _;
+    }
+
     function startActivity() public onlyOwner {
         _isActivityValid = true;
         emit ActivityStatusChange(msg.sender, bytes("start activity"));
@@ -133,6 +145,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
 
     function endActivity() public onlyOwner {
         _isActivityValid = false;
+        _isActivityFinished = true;
         emit ActivityStatusChange(msg.sender, bytes("end activity"));
     }
 
@@ -177,7 +190,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
     }
 
     function getCurrentSuppliedNum() public view returns (uint256) {
-        return _currentSuppliedNum;
+        return _currentMintedNum;
     }
 
     // return the minted tokenId, latest bargained number which can be added to token metadata
@@ -189,10 +202,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         returns (uint256, uint256)
     {
         require(msg.value >= TOKEN_PRICE, "pay fee is less than token price");
-        require(
-            MAX_SUPPLY_NUM > _currentSuppliedNum,
-            "reached max supply limit"
-        );
+        require(MAX_SUPPLY_NUM > _currentMintedNum, "reached max supply limit");
         require(
             balanceOf(msg.sender) < MAX_MINT_NUM_PER_ADDRESS,
             "reached max mint limit"
@@ -201,7 +211,7 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         uint256 latestBargainedNum = bargainNums[msg.sender];
         bargainNums[msg.sender] = 0;
 
-        _currentSuppliedNum += 1;
+        _currentMintedNum += 1;
 
         uint256 currentTokenId = tokenId.current();
         _safeMint(msg.sender, currentTokenId);
@@ -216,7 +226,45 @@ contract NFTBargain is ERC721, Ownable, IActivity, IBargain {
         emit ETHReceive(msg.sender, msg.value);
     }
 
-    function balanceOfRewards() public view returns (uint256) {
+    /**
+     * 获取奖池总金额
+     */
+    function totalRewards() public view returns (uint256) {
         return address(this).balance;
+    }
+
+    /**
+     * 获取平均金额
+     * avgAmount = 奖池总金额 / NFT minted 数量
+     */
+    function _getAverageRewardAmount() internal view rewardShouldStart returns (uint256) {
+        require(_currentMintedNum > 0, "minted number should larger than 0");
+        uint256 rewards = totalRewards();
+        require(rewards > 0, "rewards should larger than 0");
+        return rewards.div(_currentMintedNum);
+    }
+
+    /**
+     * 获取用户 mint 数量
+     */
+    function _getMintedNum(address owner) internal view returns (uint256) {
+        return balanceOf(owner);
+    }
+
+    /**
+     * 获取当前用户的奖金总额
+     * totalAmount = 平均金额 * 用户 mint 数量
+     */
+    function getMyRewardAmount() public view rewardShouldStart returns (uint256) {
+        uint256 avgAmount = _getAverageRewardAmount();
+        uint256 myMintedNum = _getMintedNum(msg.sender);
+        require(myMintedNum > 0, "user should minted");
+        return avgAmount.mul(myMintedNum);
+    }
+
+    function withdrawReward() public rewardShouldStart {
+        uint256 amount = getMyRewardAmount();
+        require(amount > 0, "reward amount should larger than 0");
+        _asyncTransfer(msg.sender, amount);
     }
 }
