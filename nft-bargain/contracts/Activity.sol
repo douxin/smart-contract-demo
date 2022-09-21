@@ -133,4 +133,11 @@ contract Activity is IActivity, IBargain, Ownable {
         require(_currentActivityStep == ActivitySteps.Active, "activity is not active");
         return isBargainConditionMatched(target);
     }
+
+    /**
+     * 获取用户当前的助力次数
+     */
+    function bargainCountOf(address target) external view returns (uint256) {
+        return bargainNums[target];
+    }
 }
