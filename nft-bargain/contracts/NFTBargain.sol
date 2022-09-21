@@ -119,7 +119,7 @@ contract NFTBargain is ERC721, Ownable, PullPayment, IActivityWithReward, IBarga
         require(msg.sender != target, "cannot bargain for self");
         require(!isBargainedFor(target), "you have bargained");
         require(
-            bargainForCounts[msg.sender] <= MAX_BARGAIN_FOR_COUNT,
+            bargainForCounts[msg.sender] < MAX_BARGAIN_FOR_COUNT,
             "reach the max bargain count"
         );
         _;
