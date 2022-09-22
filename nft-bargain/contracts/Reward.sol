@@ -128,6 +128,15 @@ contract Reward is Ownable {
         return address(this).balance;
     }
 
+    /**
+     * 追加奖金，仅在还在 mint 阶段才能追加
+     */
+    function appendRewardAmount() public payable onlyOwner {
+        require(_rewardState == RewardState.MintIsActive, "only append when mint is active");
+        require(msg.value > 0, "value should greater than 0");
+        payable(address(this)).transfer(msg.value);
+    }
+
     function _nftMintedNum() internal view returns (uint256) {
         // return NFTBargain(payable(NFT_BARGAIN_ADDRESS)).getMintedNumer();
         return _mintedCount;
@@ -138,7 +147,7 @@ contract Reward is Ownable {
     }
 
     modifier canAllocate() {
-        require(_rewardState == RewardState.RewardAllocating, "mint is not finish");
+        require(_rewardState == RewardState.RewardAllocating, "state is not allocating");
         _;
     }
 
