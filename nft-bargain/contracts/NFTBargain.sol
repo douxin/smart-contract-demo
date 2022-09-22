@@ -5,7 +5,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
-import "./Activity.sol";
+
+interface IActivity {
+    function canMintNFT(address target) external view returns (bool);
+    function bargainCountOf(address target) external view returns (uint256);
+}
 
 contract NFTBargain is ERC721, Ownable {
     // 已部署的 Activity 合约地址
@@ -71,11 +75,11 @@ contract NFTBargain is ERC721, Ownable {
     }
 
     function _canMint(address owner) internal view returns (bool) {
-        return Activity(ACTIVITY_ADDRESS).canMintNFT(owner);
+        return IActivity(ACTIVITY_ADDRESS).canMintNFT(owner);
     }
 
     function _getBargainCountOf(address owner) internal view returns (uint256) {
-        return Activity(ACTIVITY_ADDRESS).bargainCountOf(owner);
+        return IActivity(ACTIVITY_ADDRESS).bargainCountOf(owner);
     }
 
     function finishMint() public onlyOwner {
