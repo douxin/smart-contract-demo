@@ -121,7 +121,7 @@ contract Reward is Ownable {
         return rewards.div(mintedNum);
     }
 
-    function _getAverageABCRewardAmount(uint256 mintedNum) internal view onlyOwner canAllocate returns (uint256) {
+    function _getAverageERC20RewardAmount(uint256 mintedNum) internal view onlyOwner canAllocate returns (uint256) {
         uint256 rewards = totalABCRewards();
         require(rewards > 0, "rewards should larger than 0");
         return rewards.div(mintedNum);
@@ -135,12 +135,12 @@ contract Reward is Ownable {
         require(curMintedNum > 0, "minted number should greater than 0");
 
         uint256 rewardAmount = _getAverageRewardAmount(curMintedNum);
-        uint256 abcRewardAmount = _getAverageABCRewardAmount(curMintedNum);
+        uint256 erc20RewardAmount = _getAverageERC20RewardAmount(curMintedNum);
 
         for (uint256 i = 0; i < curMintedNum; i++) {
             address user = _ownerOfToken(i);
             _refundEscrow.deposit{value: rewardAmount}(user, 0);
-            _erc20RefundEscrow.deposit(user, abcRewardAmount);
+            _erc20RefundEscrow.deposit(user, erc20RewardAmount);
         }
     }
 
