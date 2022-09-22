@@ -63,4 +63,6 @@ NFT 砍一刀项目，类似于拼夕夕的砍一刀功能。目前大部分的 
 然后组合信息的到最终的 json 文件，并使用 `tokenId` 命名上传至 `ipfs` 即可。在上传时要确保文件的访问路径和对应的 `tokenURI` 是一致的。
 
 ## 奖金池
-`Reward` 里是奖金池功能。管理员通过 `finishXXX` 来控制进度。用户通过 `withdrawReward` 取现。在管理员关闭取现活动后，通过 `withdrawRest` 取回剩余奖金。
+项目增加了奖池功能，支持 ETH 和 ERC20。对于 ETH 可以在部署奖励合约 `Reward` 时转入，对于 ERC20，可以在 `ABCToken` 部署后，调用 `transfer` 转入。
+
+`ETHRefundEscrow` 和 `ERC20RefundEscrow` 继承自 `RefundEscrow`，实现了三方托管奖金。在用户兑换奖金后，剩余的资产由管理员调用 `withdrawRest` 取回。
