@@ -2,6 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 interface IActivity {
     enum ActivitySteps {
@@ -44,6 +45,8 @@ contract Activity is IActivity, IBargain, Ownable {
 
     ActivitySteps _currentActivityStep;
 
+    using Address for address;
+
     constructor(string memory name) {
         _activityName = name;
     }
@@ -61,6 +64,7 @@ contract Activity is IActivity, IBargain, Ownable {
             bargainForCounts[msg.sender] < MAX_BARGAIN_FOR_COUNT,
             "reach the max bargain count"
         );
+        require(!msg.sender.isContract(), "cannot invoke by contract address");
         _;
     }
 
