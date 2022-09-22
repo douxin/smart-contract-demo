@@ -139,7 +139,7 @@ contract Reward is Ownable {
 
         for (uint256 i = 0; i < curMintedNum; i++) {
             address user = _ownerOfToken(i);
-            _refundEscrow.deposit{value: rewardAmount}(user);
+            _refundEscrow.deposit{value: rewardAmount}(user, 0);
             _erc20RefundEscrow.deposit(user, abcRewardAmount);
         }
     }
