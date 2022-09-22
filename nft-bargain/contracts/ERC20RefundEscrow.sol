@@ -6,14 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./RefundEscrow.sol";
 
 contract ERC20RefundEscrow is Ownable, RefundEscrow {
-    // address of deployed ABCToken contract
-    address constant ABC_TOKEN_ADDRESS =
-        0x9d83e140330758a8fFD07F8Bd73e86ebcA8a5692;
-
     IERC20 private _token;
 
-    constructor(address payable beneficiary_) RefundEscrow(beneficiary_) {
-        _token = IERC20(ABC_TOKEN_ADDRESS);
+    constructor(address payable beneficiary_, address contractAddress) RefundEscrow(beneficiary_) {
+        _token = IERC20(contractAddress);
     }
 
     function withdraw(address payable payee) public override {

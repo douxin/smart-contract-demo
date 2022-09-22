@@ -3,12 +3,9 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ETHRefundEscrow.sol";
 import "./ERC20RefundEscrow.sol";
-
-interface IABCToken {
-    function balanceOf(address account) external view returns (uint256);
-}
 
 interface INFTBargain {
     function ownerOf(uint256 tokenId) external view returns (address);
@@ -42,7 +39,7 @@ contract Reward is Ownable {
         _rewardState = RewardState.MintIsActive;
         _mintedCount = 0;
         _refundEscrow = new ETHRefundEscrow(payable(msg.sender));
-        _erc20RefundEscrow = new ERC20RefundEscrow(payable(msg.sender));
+        _erc20RefundEscrow = new ERC20RefundEscrow(payable(msg.sender), ABC_TOKEN_ADDRESS);
     }
 
     /**
@@ -53,7 +50,7 @@ contract Reward is Ownable {
     }
 
     function totalABCRewards() public view returns (uint256) {
-        return IABCToken(ABC_TOKEN_ADDRESS).balanceOf(address(this));
+        return IERC20(ABC_TOKEN_ADDRESS).balanceOf(address(this));
     }
 
     /**
