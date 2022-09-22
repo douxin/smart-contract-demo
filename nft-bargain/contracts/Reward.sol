@@ -3,8 +3,8 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./RefundEscrow.sol";
-import "./ABCRefundEscrow.sol";
+import "./ETHRefundEscrow.sol";
+import "./ERC20RefundEscrow.sol";
 
 interface IABCToken {
     function balanceOf(address account) external view returns (uint256);
@@ -23,8 +23,8 @@ contract Reward is Ownable {
 
     using SafeMath for uint256;
 
-    RefundEscrow private immutable _refundEscrow;
-    ABCRefundEscrow private immutable _abcRefundEscrow;
+    ETHRefundEscrow private immutable _refundEscrow;
+    ERC20RefundEscrow private immutable _erc20RefundEscrow;
 
     // NFT mint 数量
     uint256 private _mintedCount;
@@ -41,8 +41,8 @@ contract Reward is Ownable {
     constructor() payable {
         _rewardState = RewardState.MintIsActive;
         _mintedCount = 0;
-        _refundEscrow = new RefundEscrow(payable(msg.sender));
-        _abcRefundEscrow = new ABCRefundEscrow(payable(msg.sender));
+        _refundEscrow = new ETHRefundEscrow(payable(msg.sender));
+        _erc20RefundEscrow = new ERC20RefundEscrow(payable(msg.sender));
     }
 
     /**
@@ -99,7 +99,7 @@ contract Reward is Ownable {
         _rewardState = RewardState.CanWithdraw;
         // 开启托管兑换
         _refundEscrow.enableRefunds();
-        _abcRefundEscrow.enableRefunds();
+        _erc20RefundEscrow.enableRefunds();
     }
 
     /**
@@ -108,7 +108,7 @@ contract Reward is Ownable {
     function finishWithdraw() public onlyOwner {
         _rewardState = RewardState.Finished;
         _refundEscrow.close();
-        _abcRefundEscrow.close();
+        _erc20RefundEscrow.close();
     }
 
     /**
@@ -140,7 +140,7 @@ contract Reward is Ownable {
         for (uint256 i = 0; i < curMintedNum; i++) {
             address user = _ownerOfToken(i);
             _refundEscrow.deposit{value: rewardAmount}(user);
-            _abcRefundEscrow.deposit(user, abcRewardAmount);
+            _erc20RefundEscrow.deposit(user, abcRewardAmount);
         }
     }
 
@@ -149,7 +149,7 @@ contract Reward is Ownable {
      */
     function queryMyReward() public view canWithdraw returns (uint256, uint256) {
         uint256 ethAmount = _refundEscrow.depositsOf(msg.sender);
-        uint256 abcAmount = _abcRefundEscrow.depositsOf(msg.sender);
+        uint256 abcAmount = _erc20RefundEscrow.depositsOf(msg.sender);
         return (ethAmount, abcAmount);
     }
 
@@ -158,7 +158,7 @@ contract Reward is Ownable {
      */
     function withdrawReward() public canWithdraw {
         _refundEscrow.withdraw(payable(msg.sender));
-        _abcRefundEscrow.withdraw(msg.sender);
+        _erc20RefundEscrow.withdraw(payable(msg.sender));
     }
 
     /**
@@ -166,7 +166,7 @@ contract Reward is Ownable {
      */
     function withdrawRest() public onlyOwner {
         _refundEscrow.beneficiaryWithdraw();
-        _abcRefundEscrow.beneficiaryWithdraw();
+        _erc20RefundEscrow.beneficiaryWithdraw();
     }
 
     event ETHReceive(address, uint256);
