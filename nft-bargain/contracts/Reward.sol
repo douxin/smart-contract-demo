@@ -3,10 +3,16 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "./NFTBargain.sol";
 import "./RefundEscrow.sol";
 import "./ABCRefundEscrow.sol";
-import "./ABCToken.sol";
+
+interface IABCToken {
+    function balanceOf(address account) external view returns (uint256);
+}
+
+interface INFTBargain {
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
 
 contract Reward is Ownable {
     // address of deployed NFTBargain contract
@@ -47,7 +53,7 @@ contract Reward is Ownable {
     }
 
     function totalABCRewards() public view returns (uint256) {
-        return ABCToken(ABC_TOKEN_ADDRESS).balanceOf(address(this));
+        return IABCToken(ABC_TOKEN_ADDRESS).balanceOf(address(this));
     }
 
     /**
@@ -65,7 +71,7 @@ contract Reward is Ownable {
     }
 
     function _ownerOfToken(uint256 tokenId) internal view returns (address) {
-        return NFTBargain(payable(NFT_BARGAIN_ADDRESS)).ownerOf(tokenId);
+        return INFTBargain(NFT_BARGAIN_ADDRESS).ownerOf(tokenId);
     }
 
     modifier canAllocate() {
