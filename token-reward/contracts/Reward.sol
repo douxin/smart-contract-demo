@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ETHRefundEscrow.sol";
 import "./ERC20RefundEscrow.sol";
 
+// 见 `nft-bargain` 项目
 interface INFTBargain {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
