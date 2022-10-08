@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MIT
 // 本合约仅实现白名单功能，并未实现 NFT 相关接口
+// NFT 的合约，可参考 `nft-bargain` 项目
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -25,10 +26,10 @@ contract Whitelist is Ownable {
         return _claims[user];
     }
 
-    function mint(bytes32[] calldata proof) external returns (uint256) {
+    function mint(bytes32[] calldata proof) external {
         require(isValid(msg.sender, proof), "not int whitelist");
         require(!isMinted(msg.sender), "minted");
         _claims[msg.sender] = true;
-        return 1; // 省略 mint 流程
+        // 省略 mint 流程
     }
 }
