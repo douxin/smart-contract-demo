@@ -12,5 +12,10 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "hardhat": "^2.11.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.7.3",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.2.32"
   }
 }
