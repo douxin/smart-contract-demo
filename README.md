@@ -3,7 +3,7 @@
 
 ## Ideas
 - [x] NFT mint 助力，类似于拼多多的砍一刀功能。同时此合约具有奖池功能
-- [ ] NFT whitelist，使用 `Merkle Tree` 实现 NFT 白名单
+- [x] NFT whitelist，使用 `Merkle Tree` 实现 NFT 白名单
 
 ## Utils
 - [x] 动态生成图片，👉 `common-utils/generate_image.ts`
