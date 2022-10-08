@@ -2,8 +2,8 @@
 这个仓库主要是为了练习编写智能合约。这些示例项目大部分可能仅包含合约代码，有少部分可能会包含前端代码、是一个完整的 DApp。
 
 ## Ideas
-- [x] NFT mint 助力，类似于拼多多的砍一刀功能。同时此合约具有奖池功能。
-- [ ] mall point，商场积分项目，消费赚积分，积分可以抵扣、可以停车
+- [x] NFT mint 助力，类似于拼多多的砍一刀功能。同时此合约具有奖池功能
+- [ ] NFT whitelist，使用 `Merkle Tree` 实现 NFT 白名单
 
 ## Utils
 - [x] 动态生成图片，👉 `common-utils/generate_image.ts`
