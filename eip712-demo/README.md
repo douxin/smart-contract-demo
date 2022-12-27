@@ -16,11 +16,13 @@ npx hardhat test
 ## 问题
 
 传统方式签名时，用户只能看到一串字符，用户是无法理解签名的是什么内容，如图 1。这就会给用户带来了风险，如果用户是在一个有风险的网站上进行签名，那么就可能造成资产的损失。
+
 ![图 1](https://eips.ethereum.org/assets/eip-712/eth_sign.png)
 
 ## 解决方案
 
 为了解决这个问题，[EIP-712](https://eips.ethereum.org/EIPS/eip-712) 提出了一个解决方案，它通过对结构化的数据进行签名，如图 2，用户在签名时可以清晰的知道自己所签名的内容是什么，从而避免对风险内容的签名。
+
 ![图 2](https://eips.ethereum.org/assets/eip-712/eth_signTypedData.png)
 
 EIP-712 规范包括：
